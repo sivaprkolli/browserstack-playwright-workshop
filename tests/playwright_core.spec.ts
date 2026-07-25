@@ -1,6 +1,6 @@
 import {test, expect, chromium, Locator} from '@playwright/test';
 
-test("Core Playwright test @core", async() => {
+test("Core Playwright test @core",{tag:["@smoke"]},async() => {
     const browser = await chromium.launch({headless: false}); //real browser
     const context = await browser.newContext(); //new incognito browser session
     const page = await context.newPage(); //creates new tab in the browser session

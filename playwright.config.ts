@@ -13,6 +13,7 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   testDir: './tests',
+  //timeout: 10 * 1000,
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
@@ -26,7 +27,7 @@ export default defineConfig({
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('')`. */
-    // baseURL: 'http://localhost:3000',
+    baseURL: 'https://www.saucedemo.com/',
     trace: 'on-first-retry',
     launchOptions: {
       slowMo: 100,
@@ -37,11 +38,29 @@ export default defineConfig({
   /* Configure projects for major browsers */
   projects: [
     {
-      name: 'chromium',
+      name: 'login-setup',
       use: { ...devices['Desktop Chrome'] },
+      testMatch: /.*\.setup\.ts/,
     },
 
-   
+    {
+        name: 'register',
+         use: { ...devices['Desktop Chrome'] },
+         testMatch: /.*\.register\.ts/,
+
+    },
+
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome']},
+         
+    },
+
+    /*
+    storageState: 'loginSession.json' },
+       dependencies: ['login-setup'],
+    */
+
   ],
 
   /* Run your local dev server before starting the tests */

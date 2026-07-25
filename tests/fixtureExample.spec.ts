@@ -1,4 +1,4 @@
-import {test, expect, Page} from '@playwright/test';
+import {test as mytest, expect, Page} from '@playwright/test';
 
 type MyFixture ={
     webApp: string;
@@ -8,10 +8,12 @@ type LoginTestFixture ={
     myPage : Page;
 }
 
-const myTest = test.extend<MyFixture & LoginTestFixture>({
+const test = mytest.extend<MyFixture & LoginTestFixture>({
     
     webApp: async({}, use) => {
+        console.log("Before webApp fixture");
         await use("Hello WebApp");
+        console.log("After webApp fixture");
     },
     
     myPage: async({page}, use) => {
@@ -23,12 +25,12 @@ const myTest = test.extend<MyFixture & LoginTestFixture>({
     }
 });
 
-myTest("Check webApp fixture @myFix1", async ({webApp}) => {
+test("Check webApp fixture @myFix1", async ({webApp}) => {
     console.log(webApp);
     expect(webApp).toBe("Hello WebApp");
 });
 
-myTest("Check myPage fixture @myFix2", async ({myPage}) => {
+test("Check myPage fixture @myFix2", async ({myPage}) => {
     await myPage.locator('(//div[@class="inventory_item_price"])[1]').isVisible();
     await myPage.click('#add-to-cart-sauce-labs-backpack');
     await expect(myPage.locator('.shopping_cart_badge')).toHaveText('1');
