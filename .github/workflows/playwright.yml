@@ -1,10 +1,15 @@
 name: Playwright Tests
+
+permissions:
+  contents: write
+
 on:
   push:
     branches: [ main, master, pipeline_job ]
   pull_request:
     branches: [ main, master ]
   workflow_dispatch:
+
 jobs:
   test:
     timeout-minutes: 60
@@ -26,3 +31,94 @@ jobs:
         name: playwright-report
         path: playwright-report/
         retention-days: 30
+
+  publish-report:
+    if: ${{ always() && github.event_name != 'pull_request' }}
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+    - name: Download Playwright report artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: playwright-report
+        path: current-report
+
+    - name: Publish report with history to gh-pages
+      env:
+        GH_TOKEN: ${{ secrets.GH_PAT }}
+      run: |
+        set -euo pipefail
+
+        RUN_KEY="run-${{ github.run_number }}-attempt-${{ github.run_attempt }}"
+        REPO_URL="https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
+
+        if git ls-remote --exit-code --heads "$REPO_URL" gh-pages >/dev/null 2>&1; then
+          git clone --depth 1 --branch gh-pages "$REPO_URL" gh-pages
+        else
+          mkdir gh-pages
+          cd gh-pages
+          git init
+          git checkout -b gh-pages
+          cd ..
+        fi
+
+        mkdir -p "gh-pages/reports/${RUN_KEY}"
+        rm -rf gh-pages/latest
+
+        cp -R current-report/. "gh-pages/reports/${RUN_KEY}/"
+        cp -R current-report/. gh-pages/latest/
+
+        cat > gh-pages/index.html <<EOF
+        <!doctype html>
+        <html lang="en">
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>Playwright Report History</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 2rem; }
+            h1 { margin-bottom: 0.5rem; }
+            p { color: #555; }
+            ul { line-height: 1.8; }
+          </style>
+        </head>
+        <body>
+          <h1>Playwright Report History</h1>
+          <p>Repository: ${{ github.repository }}</p>
+          <p><a href="./latest/index.html">Open latest report</a></p>
+          <h2>Historical runs</h2>
+          <ul>
+        EOF
+
+        find gh-pages/reports -mindepth 1 -maxdepth 1 -type d -print \
+          | sed 's#^gh-pages/reports/##' \
+          | sort -Vr \
+          | while read -r dir; do
+              echo "<li><a href=\"./reports/${dir}/index.html\">${dir}</a></li>" >> gh-pages/index.html
+            done
+
+        cat >> gh-pages/index.html <<EOF
+          </ul>
+        </body>
+        </html>
+        EOF
+
+        cd gh-pages
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git add .
+
+        if git diff --cached --quiet; then
+          echo "No changes to publish."
+          exit 0
+        fi
+
+        git commit -m "Publish Playwright report for ${RUN_KEY}"
+        git remote remove origin 2>/dev/null || true
+        git remote add origin "$REPO_URL"
+        git push origin gh-pages
+
+    - name: Report URLs
+      run: |
+        echo "Latest: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/latest/index.html"
+        echo "History index: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/index.html"
