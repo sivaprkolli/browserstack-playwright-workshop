@@ -30,8 +30,8 @@ export default defineConfig({
     baseURL: 'https://www.saucedemo.com/',
     trace: 'on-first-retry',
     launchOptions: {
-      slowMo: 100,
-      headless: false,
+      slowMo: process.env.CI ? 0 : 100,
+      headless: !!process.env.CI,
     },
   },
 
