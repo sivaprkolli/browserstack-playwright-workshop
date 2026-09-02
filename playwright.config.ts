@@ -30,7 +30,7 @@ export default defineConfig({
     baseURL: 'https://www.saucedemo.com/',
     trace: 'on-first-retry',
     launchOptions: {
-      slowMo: 100,
+      slowMo: 2000,
       headless: false,
     },
   },
@@ -43,16 +43,19 @@ export default defineConfig({
       testMatch: /.*\.setup\.ts/,
     },
 
-    {
-        name: 'register',
-         use: { ...devices['Desktop Chrome'] },
-         testMatch: /.*\.register\.ts/,
+    // {
+    //     name: 'register',
+    //      use: { ...devices['Desktop Chrome'] },
+    //      testMatch: /.*\.register\.ts/,
 
-    },
+    // },
 
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome']},
+      use: { ...devices['Desktop Chrome'],
+        storageState: 'loginSession.json' },
+       dependencies: ['login-setup'],
+      
          
     },
 
